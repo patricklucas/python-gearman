@@ -3,16 +3,17 @@ from gearman.constants import PRIORITY_NONE, JOB_UNKNOWN, JOB_PENDING, JOB_CREAT
 
 class GearmanJob(object):
     """Represents the basics of a job... used in GearmanClient / GearmanWorker to represent job states"""
-    def __init__(self, connection, handle, task, unique, data):
+    def __init__(self, connection, handle, task, unique, data, epoch=None):
         self.connection = connection
         self.handle = handle
 
         self.task = task
         self.unique = unique
+        self.epoch = epoch
         self.data = data
 
     def to_dict(self):
-        return dict(task=self.task, job_handle=self.handle, unique=self.unique, data=self.data)
+        return dict(task=self.task, job_handle=self.handle, unique=self.unique, epoch=self.epoch, data=self.data)
 
     def __repr__(self):
         return '<GearmanJob connection/handle=(%r, %r), task=%s, unique=%s, data=%r>' % (self.connection, self.handle, self.task, self.unique, self.data)

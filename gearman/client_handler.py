@@ -5,7 +5,7 @@ import logging
 from gearman.command_handler import GearmanCommandHandler
 from gearman.constants import JOB_UNKNOWN, JOB_PENDING, JOB_CREATED, JOB_FAILED, JOB_COMPLETE
 from gearman.errors import InvalidClientState
-from gearman.protocol import GEARMAN_COMMAND_GET_STATUS, submit_cmd_for_background_priority
+from gearman.protocol import GEARMAN_COMMAND_GET_STATUS, GEARMAN_COMMAND_SUBMIT_JOB_EPOCH, submit_cmd_for_background_priority
 
 gearman_logger = logging.getLogger(__name__)
 
@@ -27,11 +27,17 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
         gearman_job = current_request.job
 
-        # Handle the I/O for requesting a job - determine which COMMAND we need to send
-        cmd_type = submit_cmd_for_background_priority(current_request.background, current_request.priority)
-
         outbound_data = self.encode_data(gearman_job.data)
-        self.send_command(cmd_type, task=gearman_job.task, unique=gearman_job.unique, data=outbound_data)
+        cmd_args = dict(task=gearman_job.task, unique=gearman_job.unique, data=outbound_data)
+
+        # Handle the I/O for requesting a job - determine which COMMAND we need to send
+        if gearman_job.epoch:
+            cmd_type = GEARMAN_COMMAND_SUBMIT_JOB_EPOCH
+            cmd_args['epoch'] = str(gearman_job.epoch)
+        else:
+            cmd_type = submit_cmd_for_background_priority(current_request.background, current_request.priority)
+
+        self.send_command(cmd_type, **cmd_args)
 
         # Once this command is sent, our request needs to wait for a handle
         current_request.state = JOB_PENDING
